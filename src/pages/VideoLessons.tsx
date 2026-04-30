@@ -6,7 +6,7 @@ import { addDoc, collection, serverTimestamp, deleteDoc, doc } from 'firebase/fi
 import { db, handleFirestoreError, OperationType } from '../firebase';
 import { VideoLesson, Subject } from '../types';
 import { Card } from '../components/Card';
-import { recommendVideos } from '../services/geminiService';
+import { recommendVideos } from '../services/openai';
 import { cn } from '../lib/utils';
 
 interface VideoLessonsProps {
