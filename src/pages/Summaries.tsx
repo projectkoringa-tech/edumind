@@ -15,7 +15,7 @@ import { addDoc, collection, serverTimestamp, deleteDoc, doc } from 'firebase/fi
 import { db, handleFirestoreError, OperationType } from '../firebase';
 import { Summary } from '../types';
 import { Card } from '../components/Card';
-import { summarizeText, FileData } from '../services/geminiService';
+import { summarizeText, FileData } from '../services/openai';
 import { cn } from '../lib/utils';
 import Markdown from 'react-markdown';
 import remarkMath from 'remark-math';
