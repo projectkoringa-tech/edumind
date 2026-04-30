@@ -7,7 +7,7 @@ import { db, handleFirestoreError, OperationType } from '../firebase';
 import { Task } from '../types';
 import { Card } from '../components/Card';
 import { cn } from '../lib/utils';
-import { correctTask } from '../services/geminiService';
+import { correctTask } from '../services/openai';
 import Markdown from 'react-markdown';
 import remarkMath from 'remark-math';
 import rehypeKatex from 'rehype-katex';
