@@ -122,7 +122,7 @@ export const TutorIA = ({ user, sessions, profile, subjects }: TutorIAProps) => 
         setActiveSession(session);
       }
 
-      const aiResponse = await askTutor(messageText, session.messages.slice(-6), currentFile || undefined);
+      const aiResponse = await askChatGPT(messageText, session.messages.slice(-6), currentFile || undefined);
       const modelMessage: Message = {
         role: 'model',
         content: aiResponse || 'Desculpe, tive um problema ao processar sua pergunta.',
