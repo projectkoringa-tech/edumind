@@ -4,7 +4,7 @@ const ai = new GoogleGenAI({
   apiKey: import.meta.env.VITE_GEMINI_API_KEY
 });
 
-export const geminiModel = "gemini-1.5-flash";
+export const geminiModel = "gemini-1.5-pro";
 
 export interface FileData {
   mimeType: string;
