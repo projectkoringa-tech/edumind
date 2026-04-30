@@ -16,7 +16,7 @@ import { User } from 'firebase/auth';
 import { doc, addDoc, collection, serverTimestamp, setDoc, deleteDoc } from 'firebase/firestore';
 import { db, handleFirestoreError, OperationType } from '../firebase';
 import { StudySession, Message, UserProfile, Subject } from '../types';
-import { askTutor, generateLesson, generateExercises, assignHomework, FileData } from '../services/geminiService';
+import { askChatGPT, generateLesson, generateExercises, assignHomework, FileData } from '../services/openai'';
 import { cn } from '../lib/utils';
 import Markdown from 'react-markdown';
 import remarkMath from 'remark-math';
