@@ -20,7 +20,7 @@ import { db, handleFirestoreError, OperationType } from '../firebase';
 import { UserProfile, Subject, StudyMusic, Message } from '../types';
 import { Card } from '../components/Card';
 import { DEFAULT_STUDY_MUSIC } from '../constants';
-import { generateMirKoringaLesson, chatInLesson, assignHomework, generateFlashcards } from '../services/geminiService';
+import { generateMirKoringaLesson, chatInLesson, assignHomework, generateFlashcards } from '../services/openai';
 import { cn } from '../lib/utils';
 import Markdown from 'react-markdown';
 import remarkMath from 'remark-math';
