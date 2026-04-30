@@ -6,7 +6,7 @@ import { updateDoc, doc } from 'firebase/firestore';
 import { db } from '../firebase';
 import { UserProfile, Subject } from '../types';
 import { Card } from '../components/Card';
-import { generateStudySchedule } from '../services/geminiService';
+import { generateStudySchedule } from '../services/openai';
 
 interface StudyScheduleProps {
   user: User;
