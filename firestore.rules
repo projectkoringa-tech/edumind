@@ -1,0 +1,281 @@
+rules_version = '2';
+service cloud.firestore {
+  match /databases/{database}/documents {
+
+    // ===============================================================
+    // Assumed Data Model
+    // ===============================================================
+    //
+    // Collection: users
+    // Document ID: userId (UID)
+    // Fields:
+    //   - uid: string (required)
+    //   - displayName: string (optional)
+    //   - email: string (required)
+    //   - photoURL: string (optional)
+    //   - educationLevel: string (optional)
+    //   - country: string (optional)
+    //   - province: string (optional)
+    //   - university: string (optional)
+    //   - schedule: map (optional)
+    //   - createdAt: timestamp (required)
+    //
+    // Collection: subjects
+    // Document ID: subjectId
+    // Fields:
+    //   - userId: string (required)
+    //   - name: string (required)
+    //   - description: string (optional)
+    //   - topics: list (optional)
+    //   - createdAt: timestamp (required)
+    //
+    // Collection: sessions
+    // Document ID: sessionId
+    // Fields:
+    //   - userId: string (required)
+    //   - title: string (required)
+    //   - messages: list (required)
+    //   - createdAt: timestamp (required)
+    //
+    // Collection: decks
+    // Document ID: deckId
+    // Fields:
+    //   - userId: string (required)
+    //   - topic: string (required)
+    //   - cards: list (required)
+    //   - createdAt: timestamp (required)
+    //
+    // Collection: summaries
+    // Document ID: summaryId
+    // Fields:
+    //   - userId: string (required)
+    //   - title: string (required)
+    //   - content: string (required)
+    //   - sourceText: string (required)
+    //   - createdAt: timestamp (required)
+    //
+    // Collection: videos
+    // Document ID: videoId
+    // Fields:
+    //   - userId: string (required)
+    //   - subject: string (required)
+    //   - topic: string (required)
+    //   - title: string (required)
+    //   - url: string (required)
+    //   - thumbnail: string (optional)
+    //   - createdAt: timestamp (required)
+    //
+    // ===============================================================
+
+    // ===============================================================
+    // Helper Functions
+    // ===============================================================
+    
+    function isAuthenticated() {
+      return request.auth != null;
+    }
+
+    function isOwner(userId) {
+      return isAuthenticated() && request.auth.uid == userId;
+    }
+
+    function isDocOwner() {
+      return isAuthenticated() && request.auth.uid == resource.data.userId;
+    }
+
+    function isRequestOwner() {
+      return isAuthenticated() && request.auth.uid == request.resource.data.userId;
+    }
+
+    function hasRequiredFields(fields) {
+      return request.resource.data.keys().hasAll(fields);
+    }
+
+    function hasOnlyAllowedFields(fields) {
+      return request.resource.data.keys().hasOnly(fields);
+    }
+
+    function isValidEmail(email) {
+      return email is string && email.matches("^[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\\.[a-zA-Z]{2,}$");
+    }
+
+    function isValidUrl(url) {
+      return url is string && (url.matches("^https://.*") || url.matches("^http://.*"));
+    }
+
+    function isAdmin() {
+      return isAuthenticated() &&
+        (exists(/databases/$(database)/documents/users/$(request.auth.uid)) && 
+         get(/databases/$(database)/documents/users/$(request.auth.uid)).data.get('role', '') == 'admin' ||
+          (request.auth.token.get('email', '') == "ivoimbi5@gmail.com" && request.auth.token.get('email_verified', false) == true));
+    }
+
+    // ===============================================================
+    // Domain Validators
+    // ===============================================================
+
+    function isValidUser(data) {
+      return hasRequiredFields(['uid', 'email', 'createdAt']) &&
+             data.uid == request.auth.uid &&
+             (data.get('displayName', null) == null || (data.displayName is string && data.displayName.size() < 100)) &&
+             (data.get('photoURL', null) == null || isValidUrl(data.photoURL)) &&
+             (data.get('educationLevel', null) == null || data.educationLevel in ['primário', 'secundário', 'superior']) &&
+             (data.get('country', null) == null || data.country is string) &&
+             (data.get('province', null) == null || data.province is string) &&
+             (data.get('university', null) == null || data.university is string) &&
+             (data.get('schedule', null) == null || data.schedule is map) &&
+             (data.get('studySchedule', null) == null || data.studySchedule is map) &&
+             (data.get('welcomeShown', null) == null || data.welcomeShown is bool) &&
+             data.createdAt is timestamp;
+    }
+
+    function isValidNotification(data) {
+      return hasRequiredFields(['userId', 'title', 'message', 'type', 'read', 'createdAt']) &&
+             data.userId == request.auth.uid &&
+             data.title is string && data.title.size() > 0 && data.title.size() < 200 &&
+             data.message is string && data.message.size() > 0 && data.message.size() < 2000 &&
+             data.type in ['info', 'reminder', 'tutor'] &&
+             data.read is bool &&
+             data.createdAt is timestamp;
+    }
+
+    function isValidSubject(data) {
+      return hasRequiredFields(['userId', 'name', 'createdAt']) &&
+             data.userId == request.auth.uid &&
+             data.name is string && data.name.size() > 0 && data.name.size() < 200 &&
+             (data.get('topics', []) is list && data.get('topics', []).size() < 200) &&
+             (data.get('description', '') is string && data.get('description', '').size() < 1000) &&
+             data.createdAt is timestamp;
+    }
+
+    function isValidSession(data) {
+      return hasRequiredFields(['userId', 'title', 'messages', 'createdAt']) &&
+             data.userId == request.auth.uid &&
+             data.title is string && data.title.size() > 0 && data.title.size() < 500 &&
+             data.messages is list && data.messages.size() < 1000 &&
+             data.createdAt is timestamp;
+    }
+
+    function isValidDeck(data) {
+      return hasRequiredFields(['userId', 'topic', 'cards', 'createdAt']) &&
+             data.userId == request.auth.uid &&
+             data.topic is string && data.topic.size() > 0 && data.topic.size() < 200 &&
+             data.cards is list && data.cards.size() < 50 &&
+             data.createdAt is timestamp;
+    }
+
+    function isValidSummary(data) {
+      return hasRequiredFields(['userId', 'title', 'content', 'sourceText', 'createdAt']) &&
+             data.userId == request.auth.uid &&
+             data.title is string && data.title.size() > 0 && data.title.size() < 200 &&
+             data.content is string && data.content.size() < 10000 &&
+             data.sourceText is string && data.sourceText.size() < 50000 &&
+             (data.get('signature', null) == null || (data.signature is string && data.signature.size() < 100)) &&
+             data.createdAt is timestamp;
+    }
+
+    function isValidTask(data) {
+      return hasRequiredFields(['userId', 'subject', 'topic', 'content', 'status', 'createdAt']) &&
+             data.userId == request.auth.uid &&
+             data.subject is string && data.subject.size() > 0 && data.subject.size() < 100 &&
+             data.topic is string && data.topic.size() > 0 && data.topic.size() < 200 &&
+             data.content is string && data.content.size() < 10000 &&
+             data.status in ['pending', 'completed'] &&
+             data.createdAt is timestamp;
+    }
+
+    function isValidMusic(data) {
+      return hasRequiredFields(['userId', 'title', 'url', 'createdAt']) &&
+             data.userId == request.auth.uid &&
+             data.title is string && data.title.size() > 0 && data.title.size() < 200 &&
+             data.url is string && isValidUrl(data.url) &&
+             data.createdAt is timestamp;
+    }
+
+    function isValidVideo(data) {
+      return hasRequiredFields(['userId', 'subject', 'topic', 'title', 'url', 'createdAt']) &&
+             data.userId == request.auth.uid &&
+             data.subject is string && data.subject.size() > 0 && data.subject.size() < 100 &&
+             data.topic is string && data.topic.size() > 0 && data.topic.size() < 200 &&
+             data.title is string && data.title.size() > 0 && data.title.size() < 500 &&
+             data.url is string && isValidUrl(data.url) &&
+             (data.get('thumbnail', null) == null || isValidUrl(data.thumbnail)) &&
+             data.createdAt is timestamp;
+    }
+
+    // ===============================================================
+    // Rules
+    // ===============================================================
+
+    match /users/{userId} {
+      allow read: if isOwner(userId) || isAdmin();
+      allow create: if isOwner(userId) && isValidUser(request.resource.data);
+      allow update: if isOwner(userId) && isValidUser(request.resource.data) && 
+                      request.resource.data.uid == resource.data.uid;
+    }
+
+    match /sessions/{sessionId} {
+      allow read: if isAuthenticated() && (resource == null || resource.data.userId == request.auth.uid || isAdmin());
+      allow create: if isAuthenticated() && request.resource.data.userId == request.auth.uid && isValidSession(request.resource.data);
+      allow update: if isAuthenticated() && resource.data.userId == request.auth.uid && request.resource.data.userId == request.auth.uid && isValidSession(request.resource.data);
+      allow delete: if isAuthenticated() && (resource.data.userId == request.auth.uid || isAdmin());
+    }
+
+    match /decks/{deckId} {
+      allow read: if isAuthenticated() && (resource == null || resource.data.userId == request.auth.uid || isAdmin());
+      allow create: if isAuthenticated() && request.resource.data.userId == request.auth.uid && isValidDeck(request.resource.data);
+      allow update: if isAuthenticated() && resource.data.userId == request.auth.uid && request.resource.data.userId == request.auth.uid && isValidDeck(request.resource.data);
+      allow delete: if isAuthenticated() && (resource.data.userId == request.auth.uid || isAdmin());
+    }
+
+    match /summaries/{summaryId} {
+      allow read: if isAuthenticated() && (resource == null || resource.data.userId == request.auth.uid || isAdmin());
+      allow create: if isAuthenticated() && request.resource.data.userId == request.auth.uid && isValidSummary(request.resource.data);
+      allow update: if isAuthenticated() && resource.data.userId == request.auth.uid && request.resource.data.userId == request.auth.uid && isValidSummary(request.resource.data);
+      allow delete: if isAuthenticated() && (resource.data.userId == request.auth.uid || isAdmin());
+    }
+
+    match /subjects/{subjectId} {
+      allow read: if isAuthenticated() && (resource == null || resource.data.userId == request.auth.uid || isAdmin());
+      allow create: if isAuthenticated() && request.resource.data.userId == request.auth.uid;
+      allow update: if isAuthenticated() && resource.data.userId == request.auth.uid && request.resource.data.userId == request.auth.uid;
+      allow delete: if isAuthenticated() && (resource.data.userId == request.auth.uid || isAdmin());
+    }
+
+    match /tasks/{taskId} {
+      allow read: if isAuthenticated() && (resource == null || resource.data.userId == request.auth.uid || isAdmin());
+      allow create: if isAuthenticated() && request.resource.data.userId == request.auth.uid && isValidTask(request.resource.data);
+      allow update: if isAuthenticated() && resource.data.userId == request.auth.uid && request.resource.data.userId == request.auth.uid && isValidTask(request.resource.data);
+      allow delete: if isAuthenticated() && (resource.data.userId == request.auth.uid || isAdmin());
+    }
+
+    match /musics/{musicId} {
+      allow read: if isAuthenticated() && (resource == null || resource.data.userId == request.auth.uid || isAdmin());
+      allow create: if isAuthenticated() && request.resource.data.userId == request.auth.uid && isValidMusic(request.resource.data);
+      allow update: if isAuthenticated() && resource.data.userId == request.auth.uid && request.resource.data.userId == request.auth.uid && isValidMusic(request.resource.data);
+      allow delete: if isAuthenticated() && (resource.data.userId == request.auth.uid || isAdmin());
+    }
+
+    match /videos/{videoId} {
+      allow read: if isAuthenticated() && (resource == null || resource.data.userId == request.auth.uid || isAdmin());
+      allow create: if isAuthenticated() && request.resource.data.userId == request.auth.uid && isValidVideo(request.resource.data);
+      allow update: if isAuthenticated() && resource.data.userId == request.auth.uid && request.resource.data.userId == request.auth.uid && isValidVideo(request.resource.data);
+      allow delete: if isAuthenticated() && (resource.data.userId == request.auth.uid || isAdmin());
+    }
+
+    match /notifications/{notificationId} {
+      allow read: if isAuthenticated() && (resource == null || resource.data.userId == request.auth.uid || isAdmin());
+      allow create: if isAuthenticated() && request.resource.data.userId == request.auth.uid && isValidNotification(request.resource.data);
+      allow update: if isAuthenticated() && resource.data.userId == request.auth.uid && request.resource.data.userId == request.auth.uid && isValidNotification(request.resource.data);
+      allow delete: if isAuthenticated() && (resource.data.userId == request.auth.uid || isAdmin());
+    }
+
+    match /test/connection {
+      allow read: if true;
+    }
+
+    match /{path=**} {
+      allow read, write: if false;
+    }
+  }
+}

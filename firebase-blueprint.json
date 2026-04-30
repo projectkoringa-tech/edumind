@@ -1,0 +1,152 @@
+{
+  "entities": {
+    "User": {
+      "title": "User Profile",
+      "description": "User profile and study preferences.",
+      "type": "object",
+      "properties": {
+        "uid": { "type": "string", "description": "Firebase Auth UID" },
+        "displayName": { "type": "string" },
+        "email": { "type": "string" },
+        "photoURL": { "type": "string" },
+        "educationLevel": { "type": "string", "enum": ["Primário", "Secundário", "Superior"] },
+        "country": { "type": "string" },
+        "province": { "type": "string" },
+        "university": { "type": "string" },
+        "schedule": {
+          "type": "object",
+          "properties": {
+            "monday": { "type": "string" },
+            "tuesday": { "type": "string" },
+            "wednesday": { "type": "string" },
+            "thursday": { "type": "string" },
+            "friday": { "type": "string" }
+          }
+        },
+        "createdAt": { "type": "string", "format": "date-time" }
+      },
+      "required": ["uid", "email"]
+    },
+    "Subject": {
+      "title": "Subject",
+      "description": "A school or university subject.",
+      "type": "object",
+      "properties": {
+        "userId": { "type": "string" },
+        "name": { "type": "string" },
+        "description": { "type": "string" },
+        "topics": { "type": "array", "items": { "type": "string" } },
+        "createdAt": { "type": "string", "format": "date-time" }
+      }
+    },
+    "StudySession": {
+      "title": "Study Session",
+      "description": "A chat session with the AI tutor.",
+      "type": "object",
+      "properties": {
+        "userId": { "type": "string" },
+        "title": { "type": "string" },
+        "messages": {
+          "type": "array",
+          "items": {
+            "type": "object",
+            "properties": {
+              "role": { "type": "string", "enum": ["user", "model"] },
+              "content": { "type": "string" },
+              "timestamp": { "type": "string", "format": "date-time" }
+            }
+          }
+        },
+        "createdAt": { "type": "string", "format": "date-time" }
+      }
+    },
+    "FlashcardDeck": {
+      "title": "Flashcard Deck",
+      "description": "A collection of flashcards for a specific topic.",
+      "type": "object",
+      "properties": {
+        "userId": { "type": "string" },
+        "topic": { "type": "string" },
+        "cards": {
+          "type": "array",
+          "items": {
+            "type": "object",
+            "properties": {
+              "front": { "type": "string" },
+              "back": { "type": "string" },
+              "mastered": { "type": "boolean" }
+            }
+          }
+        },
+        "createdAt": { "type": "string", "format": "date-time" }
+      }
+    },
+    "Summary": {
+      "title": "Summary",
+      "description": "AI generated summaries of topics or texts.",
+      "type": "object",
+      "properties": {
+        "userId": { "type": "string" },
+        "title": { "type": "string" },
+        "content": { "type": "string" },
+        "sourceText": { "type": "string" },
+        "signature": { "type": "string" },
+        "createdAt": { "type": "string", "format": "date-time" }
+      }
+    },
+    "Task": {
+      "title": "Task",
+      "description": "AI generated study tasks or homework.",
+      "type": "object",
+      "properties": {
+        "userId": { "type": "string" },
+        "subject": { "type": "string" },
+        "topic": { "type": "string" },
+        "content": { "type": "string" },
+        "status": { "type": "string", "enum": ["pending", "completed"] },
+        "createdAt": { "type": "string", "format": "date-time" }
+      }
+    },
+    "StudyMusic": {
+      "title": "Study Music",
+      "description": "User's study music links.",
+      "type": "object",
+      "properties": {
+        "userId": { "type": "string" },
+        "title": { "type": "string" },
+        "url": { "type": "string" },
+        "createdAt": { "type": "string", "format": "date-time" }
+      }
+    }
+  },
+  "firestore": {
+    "/users/{userId}": {
+      "schema": "User",
+      "description": "Individual user profiles."
+    },
+    "/sessions/{sessionId}": {
+      "schema": "StudySession",
+      "description": "AI tutor chat sessions."
+    },
+    "/decks/{deckId}": {
+      "schema": "FlashcardDeck",
+      "description": "User flashcard collections."
+    },
+    "/summaries/{summaryId}": {
+      "schema": "Summary",
+      "description": "Saved AI summaries."
+    },
+    "/subjects/{subjectId}": {
+      "schema": "Subject",
+      "description": "User subjects."
+    },
+    "/tasks/{taskId}": {
+      "schema": "Task",
+      "description": "User study tasks."
+    },
+    "/musics/{musicId}": {
+      "schema": "StudyMusic",
+      "description": "User study music."
+    }
+  }
+}
