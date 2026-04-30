@@ -6,7 +6,7 @@ import { addDoc, collection, serverTimestamp, deleteDoc, doc } from 'firebase/fi
 import { db, handleFirestoreError, OperationType } from '../firebase';
 import { FlashcardDeck } from '../types';
 import { Card } from '../components/Card';
-import { generateFlashcards } from '../services/geminiService';
+import { generateFlashcards } from '../services/openai';
 import { cn } from '../lib/utils';
 
 interface FlashcardsProps {
