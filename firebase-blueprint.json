@@ -2,151 +2,140 @@
   "entities": {
     "User": {
       "title": "User Profile",
-      "description": "User profile and study preferences.",
+      "description": "User account information and school details.",
       "type": "object",
       "properties": {
-        "uid": { "type": "string", "description": "Firebase Auth UID" },
-        "displayName": { "type": "string" },
-        "email": { "type": "string" },
-        "photoURL": { "type": "string" },
-        "educationLevel": { "type": "string", "enum": ["Primário", "Secundário", "Superior"] },
+        "id": { "type": "string" },
+        "name": { "type": "string" },
+        "age": { "type": "number" },
+        "academicLevel": { "type": "string" },
         "country": { "type": "string" },
         "province": { "type": "string" },
-        "university": { "type": "string" },
-        "schedule": {
-          "type": "object",
-          "properties": {
-            "monday": { "type": "string" },
-            "tuesday": { "type": "string" },
-            "wednesday": { "type": "string" },
-            "thursday": { "type": "string" },
-            "friday": { "type": "string" }
-          }
-        },
-        "createdAt": { "type": "string", "format": "date-time" }
+        "school": { "type": "string" },
+        "createdAt": { "type": "string", "format": "date-time" },
+        "updatedAt": { "type": "string", "format": "date-time" }
       },
-      "required": ["uid", "email"]
+      "required": ["id", "name", "academicLevel", "country"]
     },
-    "Subject": {
-      "title": "Subject",
-      "description": "A school or university subject.",
+    "Discipline": {
+      "title": "Subject / Discipline",
+      "description": "Academic subjects added by the user.",
       "type": "object",
       "properties": {
+        "id": { "type": "string" },
         "userId": { "type": "string" },
         "name": { "type": "string" },
-        "description": { "type": "string" },
-        "topics": { "type": "array", "items": { "type": "string" } },
+        "color": { "type": "string" },
         "createdAt": { "type": "string", "format": "date-time" }
-      }
+      },
+      "required": ["id", "userId", "name"]
     },
-    "StudySession": {
-      "title": "Study Session",
-      "description": "A chat session with the AI tutor.",
+    "Schedule": {
+      "title": "School Schedule Entry",
+      "description": "Weekly schedule entry for a discipline.",
       "type": "object",
       "properties": {
+        "id": { "type": "string" },
         "userId": { "type": "string" },
+        "disciplineId": { "type": "string" },
+        "dayOfWeek": { "type": "number", "description": "0-6 (Sun-Sat)" },
+        "startTime": { "type": "string", "description": "HH:mm" },
+        "endTime": { "type": "string", "description": "HH:mm" }
+      },
+      "required": ["id", "userId", "disciplineId", "dayOfWeek", "startTime", "endTime"]
+    },
+    "Material": {
+      "title": "Study Material",
+      "description": "Support resources like PDFs, images, or links.",
+      "type": "object",
+      "properties": {
+        "id": { "type": "string" },
+        "userId": { "type": "string" },
+        "disciplineId": { "type": "string" },
+        "type": { "type": "string", "enum": ["pdf", "image", "text", "link"] },
         "title": { "type": "string" },
-        "messages": {
-          "type": "array",
-          "items": {
-            "type": "object",
-            "properties": {
-              "role": { "type": "string", "enum": ["user", "model"] },
-              "content": { "type": "string" },
-              "timestamp": { "type": "string", "format": "date-time" }
-            }
-          }
-        },
+        "url": { "type": "string" },
+        "content": { "type": "string" },
         "createdAt": { "type": "string", "format": "date-time" }
-      }
+      },
+      "required": ["id", "userId", "disciplineId", "type", "title"]
     },
-    "FlashcardDeck": {
-      "title": "Flashcard Deck",
-      "description": "A collection of flashcards for a specific topic.",
+    "Flashcard": {
+      "title": "Flashcard",
+      "description": "Question and answer pair for active recall.",
       "type": "object",
       "properties": {
+        "id": { "type": "string" },
         "userId": { "type": "string" },
-        "topic": { "type": "string" },
-        "cards": {
-          "type": "array",
-          "items": {
-            "type": "object",
-            "properties": {
-              "front": { "type": "string" },
-              "back": { "type": "string" },
-              "mastered": { "type": "boolean" }
-            }
-          }
-        },
+        "disciplineId": { "type": "string" },
+        "theme": { "type": "string" },
+        "question": { "type": "string" },
+        "answer": { "type": "string" },
         "createdAt": { "type": "string", "format": "date-time" }
-      }
+      },
+      "required": ["id", "userId", "disciplineId", "theme", "question", "answer"]
     },
     "Summary": {
       "title": "Summary",
-      "description": "AI generated summaries of topics or texts.",
+      "description": "Lesson summaries generated or written by the user.",
       "type": "object",
       "properties": {
+        "id": { "type": "string" },
         "userId": { "type": "string" },
-        "title": { "type": "string" },
+        "disciplineId": { "type": "string" },
+        "theme": { "type": "string" },
         "content": { "type": "string" },
-        "sourceText": { "type": "string" },
-        "signature": { "type": "string" },
+        "source": { "type": "string", "enum": ["manual", "ai"] },
         "createdAt": { "type": "string", "format": "date-time" }
-      }
+      },
+      "required": ["id", "userId", "disciplineId", "theme", "content"]
     },
     "Task": {
       "title": "Task",
-      "description": "AI generated study tasks or homework.",
+      "description": "Exercises or homework assigned or generated.",
       "type": "object",
       "properties": {
+        "id": { "type": "string" },
         "userId": { "type": "string" },
-        "subject": { "type": "string" },
-        "topic": { "type": "string" },
+        "disciplineId": { "type": "string" },
+        "theme": { "type": "string" },
         "content": { "type": "string" },
         "status": { "type": "string", "enum": ["pending", "completed"] },
+        "userAnswer": { "type": "string" },
+        "correction": { "type": "string" },
         "createdAt": { "type": "string", "format": "date-time" }
-      }
-    },
-    "StudyMusic": {
-      "title": "Study Music",
-      "description": "User's study music links.",
-      "type": "object",
-      "properties": {
-        "userId": { "type": "string" },
-        "title": { "type": "string" },
-        "url": { "type": "string" },
-        "createdAt": { "type": "string", "format": "date-time" }
-      }
+      },
+      "required": ["id", "userId", "disciplineId", "theme", "content", "status"]
     }
   },
   "firestore": {
-    "/users/{userId}": {
+    "users/{userId}": {
       "schema": "User",
-      "description": "Individual user profiles."
+      "description": "Unique profiles for each user."
     },
-    "/sessions/{sessionId}": {
-      "schema": "StudySession",
-      "description": "AI tutor chat sessions."
+    "disciplines/{disciplineId}": {
+      "schema": "Discipline",
+      "description": "Subjects added by users."
     },
-    "/decks/{deckId}": {
-      "schema": "FlashcardDeck",
-      "description": "User flashcard collections."
+    "schedules/{scheduleId}": {
+      "schema": "Schedule",
+      "description": "Weekly schedule slots."
     },
-    "/summaries/{summaryId}": {
+    "materials/{materialId}": {
+      "schema": "Material",
+      "description": "Study resources."
+    },
+    "flashcards/{flashcardId}": {
+      "schema": "Flashcard",
+      "description": "Active recall cards."
+    },
+    "summaries/{summaryId}": {
       "schema": "Summary",
-      "description": "Saved AI summaries."
+      "description": "Study summaries."
     },
-    "/subjects/{subjectId}": {
-      "schema": "Subject",
-      "description": "User subjects."
-    },
-    "/tasks/{taskId}": {
+    "tasks/{taskId}": {
       "schema": "Task",
-      "description": "User study tasks."
-    },
-    "/musics/{musicId}": {
-      "schema": "StudyMusic",
-      "description": "User study music."
+      "description": "Academic tasks and exercises."
     }
   }
 }

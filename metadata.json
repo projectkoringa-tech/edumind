@@ -1,5 +1,6 @@
 {
-  "name": "EduMind AI",
-  "description": "Plataforma de estudo inteligente integrada com IA para resumos, flashcards e tutoria personalizada.",
-  "requestFramePermissions": []
+  "name": "EduMind",
+  "description": "Uma plataforma de estudo inteligente com tutores integrados, cronômetro Pomodoro, gestão de disciplinas e materiais.",
+  "requestFramePermissions": [],
+  "majorCapabilities": []
 }

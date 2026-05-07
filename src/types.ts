@@ -1,108 +1,71 @@
 export interface UserProfile {
-  uid: string;
-  displayName: string | null;
-  email: string | null;
-  photoURL: string | null;
-  educationLevel?: 'primário' | 'secundário' | 'superior';
-  country?: string;
-  province?: string;
-  university?: string;
-  schedule?: {
-    monday: string;
-    tuesday: string;
-    wednesday: string;
-    thursday: string;
-    friday: string;
-  };
-  studySchedule?: any;
-  welcomeShown?: boolean;
-  createdAt: any;
-}
-
-export interface AppNotification {
   id: string;
-  userId: string;
-  title: string;
-  message: string;
-  type: 'info' | 'reminder' | 'tutor';
-  read: boolean;
-  createdAt: any;
+  name: string;
+  age: number;
+  academicLevel: string;
+  country: string;
+  province?: string;
+  school?: string;
+  createdAt: string;
+  updatedAt: string;
 }
 
-export interface Subject {
+export interface Discipline {
   id: string;
   userId: string;
   name: string;
-  description: string;
-  topics?: string[];
-  createdAt: any;
+  color: string;
+  createdAt: string;
 }
 
-export interface Message {
-  role: 'user' | 'model';
-  content: string;
-  timestamp: string;
-}
-
-export interface StudySession {
+export interface ScheduleEntry {
   id: string;
   userId: string;
+  disciplineId: string;
+  dayOfWeek: number;
+  startTime: string;
+  endTime: string;
+}
+
+export interface Material {
+  id: string;
+  userId: string;
+  disciplineId: string;
+  type: 'pdf' | 'image' | 'text' | 'link';
   title: string;
-  messages: Message[];
-  createdAt: any;
+  url?: string;
+  content?: string;
+  createdAt: string;
 }
 
 export interface Flashcard {
-  front: string;
-  back: string;
-  mastered: boolean;
-}
-
-export interface FlashcardDeck {
   id: string;
   userId: string;
-  topic: string;
-  cards: Flashcard[];
-  createdAt: any;
+  disciplineId: string;
+  theme: string;
+  question: string;
+  answer: string;
+  createdAt: string;
 }
 
 export interface Summary {
   id: string;
   userId: string;
-  title: string;
+  disciplineId: string;
+  theme: string;
   content: string;
-  sourceText: string;
-  createdAt: any;
-  signature?: string;
+  source: 'manual' | 'automated';
+  createdAt: string;
 }
 
 export interface Task {
   id: string;
   userId: string;
-  subject: string;
-  topic: string;
+  disciplineId: string;
+  theme: string;
   content: string;
-  response?: string;
-  correction?: string;
   status: 'pending' | 'completed';
-  createdAt: any;
-}
-
-export interface VideoLesson {
-  id: string;
-  userId: string;
-  subject: string;
-  topic: string;
-  url: string;
-  title: string;
-  thumbnail?: string;
-  createdAt: any;
-}
-
-export interface StudyMusic {
-  id: string;
-  userId: string;
-  title: string;
-  url: string;
-  createdAt: any;
+  userAnswer?: string;
+  correction?: string;
+  createdAt: string;
 }
