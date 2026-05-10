@@ -1,9 +1,6 @@
-import { useState, useEffect, createContext, useContext, ReactNode } from 'react';
+import { useState, ReactNode } from 'react';
 import { BrowserRouter as Router, Routes, Route, Navigate, Link, useLocation } from 'react-router-dom';
-import { onAuthStateChanged, signInWithPopup, GoogleAuthProvider, User } from 'firebase/auth';
-import { doc, getDoc } from 'firebase/firestore';
-import { auth, db, handleFirestoreError, OperationType } from './lib/firebase';
-import { UserProfile } from './types';
+import { AuthProvider, useAuth } from './contexts/AuthContext';
 import { 
   LayoutDashboard, 
   BookOpen, 
@@ -36,80 +33,6 @@ import Flashcards from './components/Flashcards';
 import Resumos from './components/Resumos';
 import Tarefas from './components/Tarefas';
 import Sobre from './components/Sobre';
-
-// --- Context ---
-interface AuthContextType {
-  user: User | null;
-  profile: UserProfile | null;
-  loading: boolean;
-  login: () => Promise<void>;
-  logout: () => Promise<void>;
-  refreshProfile: () => Promise<void>;
-}
-
-const AuthContext = createContext<AuthContextType | undefined>(undefined);
-
-export function AuthProvider({ children }: { children: ReactNode }) {
-  const [user, setUser] = useState<User | null>(null);
-  const [profile, setProfile] = useState<UserProfile | null>(null);
-  const [loading, setLoading] = useState(true);
-
-  useEffect(() => {
-    const unsubscribe = onAuthStateChanged(auth, async (user) => {
-      setUser(user);
-      if (user) {
-        const path = `users/${user.uid}`;
-        try {
-          const docSnap = await getDoc(doc(db, 'users', user.uid));
-          if (docSnap.exists()) {
-            setProfile(docSnap.data() as UserProfile);
-          }
-        } catch (e) {
-          handleFirestoreError(e, OperationType.GET, path);
-        }
-      } else {
-        setProfile(null);
-      }
-      setLoading(false);
-    });
-    return unsubscribe;
-  }, []);
-
-  const login = async () => {
-    const provider = new GoogleAuthProvider();
-    await signInWithPopup(auth, provider);
-  };
-
-  const logout = async () => {
-    await auth.signOut();
-  };
-
-  const refreshProfile = async () => {
-    if (user) {
-      const path = `users/${user.uid}`;
-      try {
-        const docSnap = await getDoc(doc(db, 'users', user.uid));
-        if (docSnap.exists()) {
-          setProfile(docSnap.data() as UserProfile);
-        }
-      } catch (e) {
-        handleFirestoreError(e, OperationType.GET, path);
-      }
-    }
-  };
-
-  return (
-    <AuthContext.Provider value={{ user, profile, loading, login, logout, refreshProfile }}>
-      {children}
-    </AuthContext.Provider>
-  );
-}
-
-export function useAuth() {
-  const context = useContext(AuthContext);
-  if (!context) throw new Error('useAuth must be used within AuthProvider');
-  return context;
-}
 
 // --- Components ---
 function Sidebar() {
@@ -193,6 +116,7 @@ function Sidebar() {
 
 function PrivateRoute({ children }: { children: ReactNode }) {
   const { user, profile, loading } = useAuth();
+  const location = useLocation();
   
   if (loading) return (
     <div className="flex items-center justify-center h-screen bg-white">
@@ -206,7 +130,7 @@ function PrivateRoute({ children }: { children: ReactNode }) {
   if (!user) return <Navigate to="/login" />;
   
   // If user is logged in but has no profile, redirect to setup
-  if (!profile && window.location.pathname !== '/setup') {
+  if (!profile && location.pathname !== '/setup') {
     return <Navigate to="/setup" />;
   }
   

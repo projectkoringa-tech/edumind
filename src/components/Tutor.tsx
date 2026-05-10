@@ -1,5 +1,5 @@
 import { useState, useEffect, useRef, FormEvent } from 'react';
-import { useAuth } from '../App';
+import { useAuth } from '../contexts/AuthContext';
 import { chatWithPacavira } from '../services/geminiService';
 import { motion, AnimatePresence } from 'motion/react';
 import { Send, MessageSquare } from 'lucide-react';
@@ -34,9 +34,13 @@ export default function Tutor() {
     try {
       const response = await chatWithPacavira(messages, userMessage, profile);
       setMessages(prev => [...prev, { role: 'assistant', content: response }]);
-    } catch (error) {
+    } catch (error: any) {
       console.error(error);
-      setMessages(prev => [...prev, { role: 'assistant', content: "Desculpe, tive um erro ao processar sua dúvida." }]);
+      let errorMsg = "Desculpe, tive um erro ao processar sua dúvida.";
+      if (error.message?.includes('503') || error.message?.includes('high demand')) {
+        errorMsg = "O sistema de IA está com muita demanda (Erro 503). Por favor, aguarde alguns segundos e tente perguntar novamente.";
+      }
+      setMessages(prev => [...prev, { role: 'assistant', content: errorMsg }]);
     } finally {
       setLoading(false);
     }

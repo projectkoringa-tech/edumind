@@ -1,7 +1,7 @@
 import { useState, useEffect, FormEvent } from 'react';
 import { collection, query, where, getDocs, addDoc, deleteDoc, doc } from 'firebase/firestore';
 import { db, serverTimestamp, handleFirestoreError, OperationType } from '../lib/firebase';
-import { useAuth } from '../App';
+import { useAuth } from '../contexts/AuthContext';
 import { Material as IMaterial, Discipline } from '../types';
 import { Files, Plus, Trash2, ExternalLink, Image as ImageIcon, FileText, Link as LinkIcon } from 'lucide-react';
 import { motion } from 'motion/react';

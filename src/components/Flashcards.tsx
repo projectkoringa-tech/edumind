@@ -1,7 +1,7 @@
 import { useState, useEffect } from 'react';
 import { collection, query, where, getDocs, orderBy } from 'firebase/firestore';
 import { db, handleFirestoreError, OperationType } from '../lib/firebase';
-import { useAuth } from '../App';
+import { useAuth } from '../contexts/AuthContext';
 import { Flashcard, Discipline } from '../types';
 import { CreditCard, ChevronRight, ChevronLeft, RefreshCcw } from 'lucide-react';
 import { motion, AnimatePresence } from 'motion/react';

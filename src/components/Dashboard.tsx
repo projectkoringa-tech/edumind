@@ -1,7 +1,7 @@
 import { useState, useEffect } from 'react';
 import { collection, query, where, getDocs, limit, orderBy } from 'firebase/firestore';
 import { db, handleFirestoreError, OperationType } from '../lib/firebase';
-import { useAuth } from '../App';
+import { useAuth } from '../contexts/AuthContext';
 import { motion } from 'motion/react';
 import { BookOpen, Calendar, Zap, MessageSquare, ArrowRight, CheckSquare, FileText } from 'lucide-react';
 import { Link } from 'react-router-dom';

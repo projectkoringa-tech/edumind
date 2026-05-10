@@ -1,11 +1,12 @@
-import { useAuth } from '../App';
+import { useAuth } from '../contexts/AuthContext';
 import { motion } from 'motion/react';
 import { LogIn, BookOpen } from 'lucide-react';
+import { Navigate } from 'react-router-dom';
 
 export default function Login() {
   const { login, user, loading } = useAuth();
 
-  if (user) return <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} className="flex items-center justify-center h-screen">Redirecionando...</motion.div>;
+  if (user) return <Navigate to="/" />;
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-indigo-600 via-purple-600 to-pink-500 flex items-center justify-center p-4">

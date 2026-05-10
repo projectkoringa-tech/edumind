@@ -1,15 +1,13 @@
 import { useState, useEffect, FormEvent } from 'react';
 import { collection, query, where, getDocs, orderBy, updateDoc, doc } from 'firebase/firestore';
 import { db, serverTimestamp, handleFirestoreError, OperationType } from '../lib/firebase';
-import { useAuth } from '../App';
+import { useAuth } from '../contexts/AuthContext';
 import { Task, Discipline } from '../types';
-import { CheckSquare, MessageSquare, Send, Check, RefreshCcw } from 'lucide-react';
+import { CheckSquare, MessageSquare, Send, Check, RefreshCcw, AlertCircle } from 'lucide-react';
 import { motion, AnimatePresence } from 'motion/react';
 import { cn } from '../lib/utils';
-import { GoogleGenAI } from "@google/genai";
+import { correctTask } from '../services/geminiService';
 import MarkdownRenderer from './MarkdownRenderer';
-
-const genAI = new GoogleGenAI({ apiKey: process.env.GEMINI_API_KEY });
 
 export default function Tarefas() {
   const { user } = useAuth();
@@ -19,6 +17,7 @@ export default function Tarefas() {
   const [respondingId, setRespondingId] = useState<string | null>(null);
   const [answer, setAnswer] = useState('');
   const [correcting, setCorrecting] = useState(false);
+  const [error, setError] = useState<string | null>(null);
 
   useEffect(() => {
     fetchData();
@@ -43,18 +42,10 @@ export default function Tarefas() {
   const handleCorrect = async (task: Task) => {
     if (!answer.trim() || correcting) return;
     setCorrecting(true);
+    setError(null);
     const path = `tasks/${task.id}`;
     try {
-      const response = await genAI.models.generateContent({
-        model: "gemini-3-flash-preview",
-        contents: `Você é o Professor Mir Koringa. Corrija o seguinte exercício:
-        Exercício: ${task.content}
-        Resposta do Aluno: ${answer}
-        
-        Forneça um feedback construtivo e a resolução correta se necessário.`,
-      });
-
-      const correction = response.text;
+      const correction = await correctTask(task.content, answer);
 
       await updateDoc(doc(db, 'tasks', task.id), {
         userAnswer: answer,
@@ -67,7 +58,8 @@ export default function Tarefas() {
       setRespondingId(null);
       fetchData();
     } catch (e) {
-      handleFirestoreError(e, OperationType.WRITE, path);
+      console.error(e);
+      setError(e instanceof Error ? e.message : 'Erro ao corrigir tarefa. Verifique sua conexão.');
     } finally {
       setCorrecting(false);
     }
@@ -87,6 +79,13 @@ export default function Tarefas() {
           <span className="text-secondary">Puri: {tasks.filter(t => t.status === 'pending').length}</span>
         </div>
       </div>
+
+      {error && (
+        <div className="bg-red-50 text-red-600 p-6 rounded-3xl border border-red-100 flex items-center gap-4 animate-in fade-in slide-in-from-top-4">
+          <AlertCircle size={24} />
+          <p className="font-bold">{error}</p>
+        </div>
+      )}
 
       <div className="grid grid-cols-1 gap-8">
         {tasks.length > 0 ? tasks.map((t) => {

@@ -1,7 +1,7 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import { collection, query, where, getDocs, addDoc } from 'firebase/firestore';
 import { db, serverTimestamp, handleFirestoreError, OperationType } from '../lib/firebase';
-import { useAuth } from '../App';
+import { useAuth } from '../contexts/AuthContext';
 import { Discipline } from '../types';
 import { generateStudySummary, generateStudyPack } from '../services/geminiService';
 import { motion, AnimatePresence } from 'motion/react';
@@ -26,13 +26,30 @@ export default function Estudo() {
   const [showConfirmFinish, setShowConfirmFinish] = useState(false);
   const [showConfirmExit, setShowConfirmExit] = useState(false);
   
-  const [audioUrl, setAudioUrl] = useState('');
+  const [audioUrl, setAudioUrl] = useState('https://www.soundhelix.com/examples/mp3/SoundHelix-Song-1.mp3'); // More stable test track
   const [isMusicPlaying, setIsMusicPlaying] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [baseKnowledge, setBaseKnowledge] = useState('');
+  const audioRef = useRef<HTMLAudioElement>(null);
 
   useEffect(() => {
     fetchDisciplines();
   }, [user]);
+
+  // Audio Logic
+  useEffect(() => {
+    const audio = audioRef.current;
+    if (audio) {
+      if (isMusicPlaying) {
+        audio.play().catch(e => {
+          console.error("Audio play failed:", e);
+          setIsMusicPlaying(false);
+        });
+      } else {
+        audio.pause();
+      }
+    }
+  }, [isMusicPlaying]);
 
   async function fetchDisciplines() {
     if (!user) return;
@@ -65,13 +82,17 @@ export default function Estudo() {
     setError(null);
     try {
       const discipline = disciplines.find(d => d.id === selectedDiscipline);
-      const content = await generateStudySummary(discipline?.name || '', theme);
+      const content = await generateStudySummary(discipline?.name || '', theme, baseKnowledge);
       setStudyContent(content);
       setIsStudying(true);
       setIsActive(true);
-    } catch (e) {
+    } catch (e: any) {
       console.error(e);
-      setError('Erro ao gerar conteúdo de estudo. Tente novamente.');
+      if (e.message?.includes('503') || e.message?.includes('high demand')) {
+        setError('Os servidores da IA estão com alta demanda no momento. Por favor, tente novamente em alguns segundos.');
+      } else {
+        setError('Erro ao gerar conteúdo de estudo. Verifique sua conexão e tente novamente.');
+      }
     } finally {
       setLoading(false);
     }
@@ -155,6 +176,7 @@ export default function Estudo() {
 
   return (
     <div className="space-y-8">
+      <audio ref={audioRef} loop src={audioUrl} />
       {!isStudying ? (
         <div className="max-w-2xl mx-auto text-center space-y-8 py-12">
           <div className="space-y-4">
@@ -165,6 +187,21 @@ export default function Estudo() {
 
           <div className="card text-left p-10 space-y-8">
             <div className="space-y-6">
+              {error && (
+                <div className="bg-red-50 text-red-600 p-6 rounded-2xl border border-red-100 flex flex-col gap-4 animate-in fade-in slide-in-from-top-4">
+                  <div className="flex items-center gap-3">
+                    <RefreshCcw size={20} className="animate-spin-once" />
+                    <p className="font-bold">{error}</p>
+                  </div>
+                  <button 
+                    onClick={handleStartStudy}
+                    className="text-xs bg-red-600 text-white px-4 py-2 rounded-lg font-black w-fit hover:bg-red-700 transition-all"
+                  >
+                    Tentar Novamente
+                  </button>
+                </div>
+              )}
+
               <div>
                 <label className="block text-[11px] font-black text-slate-400 mb-3 uppercase tracking-[0.2em] leading-none">Disciplina Foco</label>
                 <select
@@ -186,6 +223,17 @@ export default function Estudo() {
                   placeholder="Ex: Arquitetura de Microserviços..."
                   className="w-full px-6 py-5 rounded-2xl border border-slate-100 outline-none focus:ring-4 focus:ring-primary/10 transition-all font-bold text-slate-700 bg-slate-50"
                 />
+              </div>
+
+              <div>
+                <label className="block text-[11px] font-black text-slate-400 mb-3 uppercase tracking-[0.2em] leading-none">Base de Conhecimento (Opcional)</label>
+                <textarea
+                  value={baseKnowledge}
+                  onChange={(e) => setBaseKnowledge(e.target.value)}
+                  placeholder="Cole aqui textos longos, conteúdos de PDFs ou sites para que o resumo seja focado neles..."
+                  className="w-full px-6 py-5 rounded-2xl border border-slate-100 outline-none focus:ring-4 focus:ring-primary/10 transition-all font-bold text-slate-700 bg-slate-50 min-h-[150px] resize-none"
+                />
+                <p className="text-[10px] text-slate-400 font-medium mt-2 italic">* Cole o texto de PDFs ou Imagens para treinar a IA neste conteúdo específico.</p>
               </div>
             </div>
 
@@ -336,7 +384,10 @@ export default function Estudo() {
             </div>
 
             {/* Study Music */}
-            <div className="card p-8 bg-white flex items-center justify-between group cursor-pointer hover:border-primary/20 transition-all">
+            <div 
+              onClick={() => setIsMusicPlaying(!isMusicPlaying)}
+              className="card p-8 bg-white flex items-center justify-between group cursor-pointer hover:border-primary/20 transition-all"
+            >
               <div className="flex gap-4 items-center">
                 <div className={cn("w-12 h-12 rounded-2xl flex items-center justify-center transition-all", isMusicPlaying ? "bg-secondary text-white animate-pulse" : "bg-slate-100 text-slate-400")}>
                   <Music size={20} />
