@@ -6,6 +6,14 @@ export interface UserProfile {
   country: string;
   province?: string;
   school?: string;
+  xp?: number;
+  level?: number;
+  streak?: number;
+  dailyXP?: number;
+  relaxoXP?: number;
+  relaxoLevel?: number;
+  relaxoTimeMinutes?: number;
+  lastXPDate?: string;
   createdAt: string;
   updatedAt: string;
 }

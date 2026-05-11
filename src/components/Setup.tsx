@@ -21,7 +21,7 @@ const ANGOLA_PROVINCES = [
 ];
 
 export default function Setup() {
-  const { user, refreshProfile } = useAuth();
+  const { user, profile, refreshProfile } = useAuth();
   const navigate = useNavigate();
   const [loading, setLoading] = useState(false);
   const [formData, setFormData] = useState({
@@ -40,13 +40,27 @@ export default function Setup() {
 
     const path = `users/${user.uid}`;
     try {
-      await setDoc(doc(db, 'users', user.uid), {
+      const userData: any = {
         id: user.uid,
+        email: user.email,
         ...formData,
         age: Number(formData.age),
-        createdAt: serverTimestamp(),
         updatedAt: serverTimestamp(),
-      });
+      };
+
+      // Only set createdAt and initial stats if profile doesn't exist
+      if (!profile) {
+        userData.createdAt = serverTimestamp();
+        userData.xp = 0;
+        userData.level = 1;
+        userData.dailyXP = 0;
+        userData.relaxoXP = 0;
+        userData.relaxoLevel = 1;
+        userData.streak = 0;
+        userData.lastXPDate = new Date().toISOString().split('T')[0];
+      }
+
+      await setDoc(doc(db, 'users', user.uid), userData, { merge: true });
       await refreshProfile();
       navigate('/');
     } catch (error) {

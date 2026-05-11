@@ -1,6 +1,7 @@
 import { useState, useEffect, useRef, FormEvent } from 'react';
 import { useAuth } from '../contexts/AuthContext';
 import { chatWithPacavira } from '../services/geminiService';
+import { addXP } from '../lib/gamification';
 import { motion, AnimatePresence } from 'motion/react';
 import { Send, MessageSquare, Trash2, RefreshCcw } from 'lucide-react';
 import { cn } from '../lib/utils';
@@ -111,6 +112,9 @@ export default function Tutor() {
     setLoading(true);
 
     try {
+      // Award XP for interaction
+      await addXP(user.uid, 50);
+
       // Save user message
       await saveMessage('user', userMessage);
 

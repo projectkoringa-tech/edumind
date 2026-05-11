@@ -3,6 +3,7 @@ import { collection, query, where, getDocs, orderBy, updateDoc, doc } from 'fire
 import { db, serverTimestamp, handleFirestoreError, OperationType } from '../lib/firebase';
 import { useAuth } from '../contexts/AuthContext';
 import { Task, Discipline } from '../types';
+import { addXP } from '../lib/gamification';
 import { CheckSquare, MessageSquare, Send, Check, RefreshCcw, AlertCircle } from 'lucide-react';
 import { motion, AnimatePresence } from 'motion/react';
 import { cn } from '../lib/utils';
@@ -53,6 +54,11 @@ export default function Tarefas() {
         status: 'completed',
         updatedAt: serverTimestamp()
       });
+
+      // Award XP for completing task
+      if (user) {
+        await addXP(user.uid, 200); 
+      }
 
       setAnswer('');
       setRespondingId(null);

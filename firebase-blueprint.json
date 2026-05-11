@@ -1,25 +1,31 @@
 {
   "entities": {
     "User": {
-      "title": "User Profile",
-      "description": "User account information and school details.",
+      "title": "Perfil do Usuário",
+      "description": "Informações da conta e progresso acadêmico.",
       "type": "object",
       "properties": {
         "id": { "type": "string" },
         "name": { "type": "string" },
+        "email": { "type": "string" },
         "age": { "type": "number" },
         "academicLevel": { "type": "string" },
         "country": { "type": "string" },
         "province": { "type": "string" },
         "school": { "type": "string" },
+        "xp": { "type": "number", "default": 0 },
+        "level": { "type": "number", "default": 1 },
+        "streak": { "type": "number", "default": 0 },
+        "dailyXP": { "type": "number", "default": 0 },
+        "lastXPDate": { "type": "string" },
         "createdAt": { "type": "string", "format": "date-time" },
         "updatedAt": { "type": "string", "format": "date-time" }
       },
       "required": ["id", "name", "academicLevel", "country"]
     },
     "Discipline": {
-      "title": "Subject / Discipline",
-      "description": "Academic subjects added by the user.",
+      "title": "Disciplina",
+      "description": "Matérias adicionadas pelo usuário.",
       "type": "object",
       "properties": {
         "id": { "type": "string" },
@@ -31,22 +37,22 @@
       "required": ["id", "userId", "name"]
     },
     "Schedule": {
-      "title": "School Schedule Entry",
-      "description": "Weekly schedule entry for a discipline.",
+      "title": "Horário",
+      "description": "Entrada no calendário semanal.",
       "type": "object",
       "properties": {
         "id": { "type": "string" },
         "userId": { "type": "string" },
         "disciplineId": { "type": "string" },
-        "dayOfWeek": { "type": "number", "description": "0-6 (Sun-Sat)" },
+        "dayOfWeek": { "type": "number", "description": "0-6 (Dom-Sab)" },
         "startTime": { "type": "string", "description": "HH:mm" },
         "endTime": { "type": "string", "description": "HH:mm" }
       },
       "required": ["id", "userId", "disciplineId", "dayOfWeek", "startTime", "endTime"]
     },
     "Material": {
-      "title": "Study Material",
-      "description": "Support resources like PDFs, images, or links.",
+      "title": "Material de Estudo",
+      "description": "PDFs, links ou imagens de suporte.",
       "type": "object",
       "properties": {
         "id": { "type": "string" },
@@ -62,7 +68,7 @@
     },
     "Flashcard": {
       "title": "Flashcard",
-      "description": "Question and answer pair for active recall.",
+      "description": "Cartão de revisão ativa.",
       "type": "object",
       "properties": {
         "id": { "type": "string" },
@@ -76,8 +82,8 @@
       "required": ["id", "userId", "disciplineId", "theme", "question", "answer"]
     },
     "Summary": {
-      "title": "Summary",
-      "description": "Lesson summaries generated or written by the user.",
+      "title": "Resumo",
+      "description": "Resumos de lições.",
       "type": "object",
       "properties": {
         "id": { "type": "string" },
@@ -91,8 +97,8 @@
       "required": ["id", "userId", "disciplineId", "theme", "content"]
     },
     "Task": {
-      "title": "Task",
-      "description": "Exercises or homework assigned or generated.",
+      "title": "Tarefa",
+      "description": "Exercícios acadêmicos.",
       "type": "object",
       "properties": {
         "id": { "type": "string" },
@@ -108,8 +114,8 @@
       "required": ["id", "userId", "disciplineId", "theme", "content", "status"]
     },
     "ChatMessage": {
-      "title": "Chat Message",
-      "description": "Messages exchanged with the AI Tutor.",
+      "title": "Mensagem do Chat",
+      "description": "Conversas com o Tutor IA.",
       "type": "object",
       "properties": {
         "id": { "type": "string" },
@@ -121,8 +127,8 @@
       "required": ["id", "userId", "role", "content", "createdAt"]
     },
     "StudySession": {
-      "title": "Study Session",
-      "description": "Paused or ongoing study sessions.",
+      "title": "Sessão de Estudo",
+      "description": "Log de tempo focado.",
       "type": "object",
       "properties": {
         "id": { "type": "string" },
@@ -130,8 +136,7 @@
         "disciplineId": { "type": "string" },
         "theme": { "type": "string" },
         "content": { "type": "string" },
-        "baseKnowledge": { "type": "string" },
-        "timeSpent": { "type": "number", "description": "Seconds spent studying" },
+        "timeSpent": { "type": "number" },
         "isActive": { "type": "boolean" },
         "lastAccessed": { "type": "string", "format": "date-time" },
         "createdAt": { "type": "string", "format": "date-time" }
@@ -140,41 +145,14 @@
     }
   },
   "firestore": {
-    "users/{userId}": {
-      "schema": "User",
-      "description": "Unique profiles for each user."
-    },
-    "disciplines/{disciplineId}": {
-      "schema": "Discipline",
-      "description": "Subjects added by users."
-    },
-    "schedules/{scheduleId}": {
-      "schema": "Schedule",
-      "description": "Weekly schedule slots."
-    },
-    "materials/{materialId}": {
-      "schema": "Material",
-      "description": "Study resources."
-    },
-    "flashcards/{flashcardId}": {
-      "schema": "Flashcard",
-      "description": "Active recall cards."
-    },
-    "summaries/{summaryId}": {
-      "schema": "Summary",
-      "description": "Study summaries."
-    },
-    "tasks/{taskId}": {
-      "schema": "Task",
-      "description": "Academic tasks and exercises."
-    },
-    "chats/{messageId}": {
-      "schema": "ChatMessage",
-      "description": "History of conversations with the Tutor."
-    },
-    "study_sessions/{sessionId}": {
-      "schema": "StudySession",
-      "description": "Ongoing or paused study sessions."
-    }
+    "users/{userId}": { "schema": "User", "description": "Perfis dos usuários" },
+    "disciplines/{disciplineId}": { "schema": "Discipline", "description": "Disciplinas" },
+    "schedules/{scheduleId}": { "schema": "Schedule", "description": "Horários" },
+    "materials/{materialId}": { "schema": "Material", "description": "Materiais" },
+    "flashcards/{flashcardId}": { "schema": "Flashcard", "description": "Flashcards" },
+    "summaries/{summaryId}": { "schema": "Summary", "description": "Resumos" },
+    "tasks/{taskId}": { "schema": "Task", "description": "Tarefas" },
+    "chats/{messageId}": { "schema": "ChatMessage", "description": "Mensagens" },
+    "study_sessions/{sessionId}": { "schema": "StudySession", "description": "Sessões" }
   }
 }

@@ -8,7 +8,7 @@ export default function Sobre() {
         <div className="w-20 h-20 bg-indigo-600 rounded-[30px] flex items-center justify-center mx-auto shadow-2xl shadow-indigo-200">
           <Sparkles className="text-white" size={40} />
         </div>
-        <h1 className="text-4xl font-black text-slate-900">EduMind</h1>
+        <h1 className="text-4xl font-black text-slate-900">EduMind.AO</h1>
         <div className="inline-flex items-center gap-2 bg-indigo-100 text-indigo-600 px-4 py-1.5 rounded-full text-xs font-black uppercase tracking-widest">
           Versão Beta 1.0.0
         </div>
@@ -21,7 +21,7 @@ export default function Sobre() {
             Sobre a Plataforma
           </h2>
           <p className="text-slate-600 leading-relaxed font-medium">
-            O EduMind nasceu para ser o seu braço direito na jornada acadêmica. Integrando as mais avançadas tecnologias inteligentes, oferecemos um ecossistema completo para gestão de tempo, conteúdo e active recall.
+            O EduMind.AO nasceu para ser o seu braço direito na jornada acadêmica. Integrando as mais avançadas tecnologias inteligentes, oferecemos um ecossistema completo para gestão de tempo, conteúdo e active recall.
           </p>
         </section>
 
@@ -43,7 +43,7 @@ export default function Sobre() {
       </div>
 
       <div className="text-center text-slate-400 text-xs">
-        © 2026 EduMind. Todos os direitos reservados.
+        © 2026 EduMind.AO. Todos os direitos reservados.
       </div>
     </div>
   );

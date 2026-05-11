@@ -1,4 +1,4 @@
-import { useState, ReactNode } from 'react';
+import { useState, ReactNode, useEffect } from 'react';
 import { BrowserRouter as Router, Routes, Route, Navigate, Link, useLocation } from 'react-router-dom';
 import { AuthProvider, useAuth } from './contexts/AuthContext';
 import { 
@@ -16,6 +16,7 @@ import {
   Menu,
   X,
   User as UserIcon,
+  Coffee,
 } from 'lucide-react';
 import { motion, AnimatePresence } from 'motion/react';
 import { cn } from './lib/utils';
@@ -33,6 +34,8 @@ import Flashcards from './components/Flashcards';
 import Resumos from './components/Resumos';
 import Tarefas from './components/Tarefas';
 import Sobre from './components/Sobre';
+import Relaxo from './components/Relaxo';
+import MascoteEdu from './components/MascoteEdu';
 
 // --- Components ---
 function Sidebar() {
@@ -50,6 +53,7 @@ function Sidebar() {
     { name: 'Flashcards', path: '/flashcards', icon: CreditCard },
     { name: 'Resumos', path: '/resumos', icon: FileText },
     { name: 'Tarefas', path: '/tarefas', icon: CheckSquare },
+    { name: 'Zona de Relaxo', path: '/relaxo', icon: Coffee },
     { name: 'Sobre', path: '/sobre', icon: Info },
   ];
 
@@ -57,18 +61,31 @@ function Sidebar() {
     <>
       <button 
         onClick={() => setIsOpen(!isOpen)} 
-        className="lg:hidden fixed top-4 left-4 z-50 p-2 bg-white rounded-md shadow-md border border-slate-200"
+        className="lg:hidden fixed top-4 left-4 z-50 p-3 bg-white rounded-xl shadow-xl border border-slate-200 text-slate-900 active:scale-95 transition-transform"
       >
-        {isOpen ? <X size={24} /> : <Menu size={24} />}
+        {isOpen ? <X size={20} /> : <Menu size={20} />}
       </button>
 
+      {/* Mobile Overlay */}
+      <AnimatePresence>
+        {isOpen && (
+          <motion.div 
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            exit={{ opacity: 0 }}
+            onClick={() => setIsOpen(false)}
+            className="fixed inset-0 z-40 bg-slate-950/60 backdrop-blur-sm lg:hidden"
+          />
+        )}
+      </AnimatePresence>
+
       <div className={cn(
-        "fixed inset-y-0 left-0 z-40 w-64 bg-sidebar text-white transform transition-transform duration-300 ease-in-out lg:translate-x-0",
-        isOpen ? "translate-x-0" : "-translate-x-full"
+        "fixed inset-y-0 left-0 z-40 w-72 bg-sidebar text-white transform transition-transform duration-500 ease-[cubic-bezier(0.4,0,0.2,1)] lg:translate-x-0 border-r border-white/5",
+        isOpen ? "translate-x-0 shadow-[20px_0_40px_rgba(0,0,0,0.3)]" : "-translate-x-full"
       )}>
         <div className="flex flex-col h-full p-6">
           <div className="flex items-center gap-2 mb-10 px-2">
-            <h1 className="text-2xl font-extrabold tracking-tighter">EduMind</h1>
+            <h1 className="text-2xl font-extrabold tracking-tighter">EduMind.AO</h1>
           </div>
 
           <nav className="flex-1 space-y-2 overflow-y-auto pr-2 custom-scrollbar">
@@ -117,12 +134,16 @@ function Sidebar() {
 function PrivateRoute({ children }: { children: ReactNode }) {
   const { user, profile, loading } = useAuth();
   const location = useLocation();
-  
+
+  useEffect(() => {
+    window.scrollTo(0, 0);
+  }, [location.pathname]);
+
   if (loading) return (
     <div className="flex items-center justify-center h-screen bg-white">
       <div className="flex flex-col items-center gap-4">
         <div className="animate-spin rounded-full h-12 w-12 border-t-2 border-b-2 border-indigo-600"></div>
-        <p className="text-slate-500 font-medium animate-pulse">Carregando EduMind...</p>
+        <p className="text-slate-500 font-medium animate-pulse">Carregando EduMind.AO...</p>
       </div>
     </div>
   );
@@ -152,18 +173,24 @@ function PrivateRoute({ children }: { children: ReactNode }) {
         </div>
       </header>
       <main className="p-6 lg:p-10 max-w-7xl mx-auto">
-        <AnimatePresence mode="wait">
+        <AnimatePresence mode="popLayout">
           <motion.div
-            key={window.location.pathname}
-            initial={{ opacity: 0, scale: 0.98 }}
-            animate={{ opacity: 1, scale: 1 }}
-            exit={{ opacity: 0, scale: 0.98 }}
-            transition={{ duration: 0.2 }}
+            key={location.pathname}
+            initial={{ opacity: 0, y: 10 }}
+            animate={{ opacity: 1, y: 0 }}
+            exit={{ opacity: 0, y: -10 }}
+            transition={{ duration: 0.3 }}
           >
             {children}
           </motion.div>
         </AnimatePresence>
       </main>
+      <MascoteEdu 
+        name={profile?.name} 
+        xp={profile?.xp} 
+        level={profile?.level}
+        isStudying={location.pathname === '/foco'}
+      />
     </div>
   );
 }
@@ -184,6 +211,7 @@ export default function App() {
           <Route path="/flashcards" element={<PrivateRoute><Flashcards /></PrivateRoute>} />
           <Route path="/resumos" element={<PrivateRoute><Resumos /></PrivateRoute>} />
           <Route path="/tarefas" element={<PrivateRoute><Tarefas /></PrivateRoute>} />
+          <Route path="/relaxo" element={<PrivateRoute><Relaxo /></PrivateRoute>} />
           <Route path="/sobre" element={<PrivateRoute><Sobre /></PrivateRoute>} />
         </Routes>
       </Router>

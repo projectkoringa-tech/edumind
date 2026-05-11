@@ -133,3 +133,55 @@ export async function correctTask(taskContent: string, userAnswer: string) {
 
   return response.text;
 }
+
+export async function generateStudyQuiz(summaryContent: string) {
+  const genAI = getGenAI();
+  const response = await genAI.models.generateContent({
+    model: "gemini-3-flash-preview",
+    contents: `Com base no seguinte resumo de estudo:
+    
+    "${summaryContent}"
+    
+    Gere um quiz de 5 perguntas de múltipla escolha para testar o conhecimento do aluno.
+    Retorne APENAS um JSON no seguinte formato:
+    {
+      "questions": [
+        {
+          "question": "texto da pergunta",
+          "options": ["opcao A", "opcao B", "opcao C", "opcao D"],
+          "answerIndex": 0
+        }
+      ]
+    }`,
+    config: {
+      responseMimeType: "application/json",
+      responseSchema: {
+        type: Type.OBJECT,
+        properties: {
+          questions: {
+            type: Type.ARRAY,
+            items: {
+              type: Type.OBJECT,
+              properties: {
+                question: { type: Type.STRING },
+                options: { type: Type.ARRAY, items: { type: Type.STRING } },
+                answerIndex: { type: Type.NUMBER }
+              },
+              required: ["question", "options", "answerIndex"]
+            }
+          }
+        },
+        required: ["questions"]
+      }
+    }
+  });
+  
+  try {
+    const text = response.text;
+    const cleanJson = text.replace(/```json/g, '').replace(/```/g, '').trim();
+    return JSON.parse(cleanJson);
+  } catch (e) {
+    console.error('Failed to parse Quiz JSON:', response.text);
+    return { questions: [] };
+  }
+}

@@ -19,7 +19,7 @@ export default function Login() {
           <BookOpen size={40} className="text-white" />
         </div>
         
-        <h1 className="text-3xl font-black text-slate-900 mb-2 tracking-tight">EduMind</h1>
+        <h1 className="text-3xl font-black text-slate-900 mb-2 tracking-tight">EduMind.AO</h1>
         <p className="text-slate-500 mb-8">Sua plataforma de estudo inteligente integrada</p>
         
         <button

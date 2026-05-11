@@ -28,15 +28,26 @@ service cloud.firestore {
     }
 
     // --- Validation Helpers ---
-    function isValidUser(data) {
-      return data.keys().hasAll(['id', 'name', 'academicLevel', 'country', 'createdAt', 'updatedAt', 'age']) &&
-             data.id is string && data.id.size() > 0 &&
-             data.name is string && data.name.size() > 0 && data.name.size() <= 100 &&
-             data.academicLevel is string &&
-             data.country is string &&
-             data.age is number &&
-             (resource == null ? data.createdAt == request.time : data.createdAt == existingData().createdAt);
-    }
+  function isValidUser(data) {
+    return (data.get('id', null) == null || data.id is string) &&
+           (data.get('name', null) == null || (data.name is string && data.name.size() >= 1 && data.name.size() <= 100)) &&
+           (data.get('email', null) == null || (data.email is string && data.email.size() <= 256)) &&
+           (data.get('academicLevel', null) == null || data.academicLevel is string) &&
+           (data.get('country', null) == null || data.country is string) &&
+           (data.get('province', null) == null || data.province is string) &&
+           (data.get('school', null) == null || data.school is string) &&
+           (data.get('age', null) == null || data.age is number) &&
+           (data.get('xp', null) == null || data.xp is number) &&
+           (data.get('level', null) == null || data.level is number) &&
+           (data.get('relaxoXP', null) == null || data.relaxoXP is number) &&
+           (data.get('relaxoLevel', null) == null || data.relaxoLevel is number) &&
+           (data.get('relaxoTimeMinutes', null) == null || data.relaxoTimeMinutes is number) &&
+           (data.get('streak', null) == null || data.streak is number) &&
+           (data.get('dailyXP', null) == null || data.dailyXP is number) &&
+           (data.get('lastXPDate', null) == null || data.lastXPDate is string) &&
+           (data.get('createdAt', null) == null || data.createdAt is timestamp || data.createdAt is string) &&
+           (data.get('updatedAt', null) == null || data.updatedAt is timestamp || data.updatedAt is string);
+  }
 
     function isValidDiscipline(data) {
       return data.userId == request.auth.uid &&
@@ -70,19 +81,19 @@ service cloud.firestore {
       return data.userId == request.auth.uid &&
              data.disciplineId is string &&
              data.content is string && data.content.size() > 0 &&
-             data.source in ['manual', 'automated'];
+             data.source in ["manual", "automated"];
     }
 
     function isValidTask(data) {
       return data.userId == request.auth.uid &&
              data.disciplineId is string &&
              data.content is string && data.content.size() > 0 &&
-             data.status in ['pending', 'completed'];
+             data.status in ["pending", "completed"];
     }
 
     function isValidChatMessage(data) {
       return data.userId == request.auth.uid &&
-             data.role in ['user', 'assistant'] &&
+             data.role in ["user", "assistant"] &&
              data.content is string && data.content.size() > 0;
     }
 
@@ -94,21 +105,33 @@ service cloud.firestore {
              data.isActive is bool;
     }
 
+    function isValidRelaxoProfile(data) {
+      return data.userId == request.auth.uid &&
+             data.xp is number &&
+             data.level is number;
+    }
+
     // --- Collections ---
 
     match /users/{userId} {
-      allow get: if isValidId(userId) && isOwner(userId);
-      allow create: if isValidId(userId) && isOwner(userId) && isValidUser(incomingData()) && incomingData().createdAt == request.time;
-      allow update: if isValidId(userId) && isOwner(userId) && isValidUser(incomingData()) &&
-                      incomingData().id == existingData().id &&
-                      incomingData().createdAt == existingData().createdAt &&
-                      incomingData().updatedAt == request.time &&
-                      incomingData().diff(existingData()).affectedKeys().hasOnly(['name', 'age', 'academicLevel', 'country', 'province', 'school', 'updatedAt']);
+      allow list: if isSignedIn();
+      allow get: if isSignedIn();
+      allow create: if isValidId(userId) && isOwner(userId) && isValidUser(incomingData()) && 
+                      incomingData().createdAt == request.time;
+      allow update: if isValidId(userId) && isOwner(userId) && isValidUser(incomingData());
+    }
+
+    match /relaxo_profiles/{userId} {
+      allow get: if isSignedIn() && (resource == null || resource.data.userId == request.auth.uid);
+      allow create: if isValidId(userId) && isOwner(userId) && isValidRelaxoProfile(incomingData());
+      allow update: if isValidId(userId) && isOwner(userId) && isValidRelaxoProfile(incomingData()) &&
+                      incomingData().userId == existingData().userId &&
+                      incomingData().diff(existingData()).affectedKeys().hasOnly(['xp', 'level', 'gamesPlayed', 'updatedAt']);
     }
 
     match /disciplines/{disciplineId} {
       allow list: if isSignedIn() && resource.data.userId == request.auth.uid;
-      allow get: if isValidId(disciplineId) && isSignedIn() && resource.data.userId == request.auth.uid;
+      allow get: if isValidId(disciplineId) && isSignedIn() && (resource == null || resource.data.userId == request.auth.uid);
       allow create: if isValidId(disciplineId) && isSignedIn() && isValidDiscipline(incomingData()) && incomingData().createdAt == request.time;
       allow update: if isValidId(disciplineId) && isSignedIn() && existingData().userId == request.auth.uid &&
                       isValidDiscipline(incomingData()) &&
@@ -119,7 +142,7 @@ service cloud.firestore {
 
     match /schedules/{scheduleId} {
       allow list: if isSignedIn() && resource.data.userId == request.auth.uid;
-      allow get: if isValidId(scheduleId) && isSignedIn() && resource.data.userId == request.auth.uid;
+      allow get: if isValidId(scheduleId) && isSignedIn() && (resource == null || resource.data.userId == request.auth.uid);
       allow create: if isValidId(scheduleId) && isSignedIn() && isValidSchedule(incomingData());
       allow update: if isValidId(scheduleId) && isSignedIn() && existingData().userId == request.auth.uid &&
                       isValidSchedule(incomingData()) &&
@@ -129,7 +152,7 @@ service cloud.firestore {
 
     match /materials/{materialId} {
       allow list: if isSignedIn() && resource.data.userId == request.auth.uid;
-      allow get: if isValidId(materialId) && isSignedIn() && resource.data.userId == request.auth.uid;
+      allow get: if isValidId(materialId) && isSignedIn() && (resource == null || resource.data.userId == request.auth.uid);
       allow create: if isValidId(materialId) && isSignedIn() && isValidMaterial(incomingData()) && incomingData().createdAt == request.time;
       allow update: if isValidId(materialId) && isSignedIn() && existingData().userId == request.auth.uid &&
                       isValidMaterial(incomingData()) &&
@@ -139,7 +162,7 @@ service cloud.firestore {
 
     match /flashcards/{flashcardId} {
       allow list: if isSignedIn() && resource.data.userId == request.auth.uid;
-      allow get: if isValidId(flashcardId) && isSignedIn() && resource.data.userId == request.auth.uid;
+      allow get: if isValidId(flashcardId) && isSignedIn() && (resource == null || resource.data.userId == request.auth.uid);
       allow create: if isValidId(flashcardId) && isSignedIn() && isValidFlashcard(incomingData()) && incomingData().createdAt == request.time;
       allow update: if isValidId(flashcardId) && isSignedIn() && existingData().userId == request.auth.uid &&
                       isValidFlashcard(incomingData()) &&
@@ -149,7 +172,7 @@ service cloud.firestore {
 
     match /summaries/{summaryId} {
       allow list: if isSignedIn() && resource.data.userId == request.auth.uid;
-      allow get: if isValidId(summaryId) && isSignedIn() && resource.data.userId == request.auth.uid;
+      allow get: if isValidId(summaryId) && isSignedIn() && (resource == null || resource.data.userId == request.auth.uid);
       allow create: if isValidId(summaryId) && isSignedIn() && isValidSummary(incomingData()) && incomingData().createdAt == request.time;
       allow update: if isValidId(summaryId) && isSignedIn() && existingData().userId == request.auth.uid &&
                       isValidSummary(incomingData()) &&
@@ -159,7 +182,7 @@ service cloud.firestore {
 
     match /tasks/{taskId} {
       allow list: if isSignedIn() && resource.data.userId == request.auth.uid;
-      allow get: if isValidId(taskId) && isSignedIn() && resource.data.userId == request.auth.uid;
+      allow get: if isValidId(taskId) && isSignedIn() && (resource == null || resource.data.userId == request.auth.uid);
       allow create: if isValidId(taskId) && isSignedIn() && isValidTask(incomingData()) && incomingData().createdAt == request.time;
       allow update: if isValidId(taskId) && isSignedIn() && existingData().userId == request.auth.uid &&
                       isValidTask(incomingData()) &&
@@ -171,14 +194,14 @@ service cloud.firestore {
 
     match /chats/{messageId} {
       allow list: if isSignedIn() && resource.data.userId == request.auth.uid;
-      allow get: if isValidId(messageId) && isSignedIn() && resource.data.userId == request.auth.uid;
+      allow get: if isValidId(messageId) && isSignedIn() && (resource == null || resource.data.userId == request.auth.uid);
       allow create: if isValidId(messageId) && isSignedIn() && isValidChatMessage(incomingData()) && incomingData().createdAt == request.time;
       allow update, delete: if false; // Messages are immutable
     }
 
     match /study_sessions/{sessionId} {
       allow list: if isSignedIn() && resource.data.userId == request.auth.uid;
-      allow get: if isValidId(sessionId) && isSignedIn() && resource.data.userId == request.auth.uid;
+      allow get: if isValidId(sessionId) && isSignedIn() && (resource == null || resource.data.userId == request.auth.uid);
       allow create: if isValidId(sessionId) && isSignedIn() && isValidStudySession(incomingData()) && incomingData().createdAt == request.time;
       allow update: if isValidId(sessionId) && isSignedIn() && existingData().userId == request.auth.uid &&
                       isValidStudySession(incomingData()) &&

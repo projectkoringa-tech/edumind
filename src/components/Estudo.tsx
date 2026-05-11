@@ -2,6 +2,7 @@ import { useState, useEffect, useRef } from 'react';
 import { collection, query, where, getDocs, addDoc, updateDoc, doc, serverTimestamp, deleteDoc, orderBy } from 'firebase/firestore';
 import { db, handleFirestoreError, OperationType } from '../lib/firebase';
 import { useAuth } from '../contexts/AuthContext';
+import { addXP } from '../lib/gamification';
 import { Discipline } from '../types';
 import { generateStudySummary, generateStudyPack } from '../services/geminiService';
 import { motion, AnimatePresence } from 'motion/react';
@@ -261,6 +262,11 @@ export default function Estudo() {
       }
 
       await Promise.all(batchPromises);
+
+      // Award XP for finishing a study session
+      if (user) {
+        await addXP(user.uid, 500); 
+      }
 
       setIsStudying(false);
       setIsActive(false);
