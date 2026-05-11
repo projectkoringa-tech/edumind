@@ -106,6 +106,37 @@
         "createdAt": { "type": "string", "format": "date-time" }
       },
       "required": ["id", "userId", "disciplineId", "theme", "content", "status"]
+    },
+    "ChatMessage": {
+      "title": "Chat Message",
+      "description": "Messages exchanged with the AI Tutor.",
+      "type": "object",
+      "properties": {
+        "id": { "type": "string" },
+        "userId": { "type": "string" },
+        "role": { "type": "string", "enum": ["user", "assistant"] },
+        "content": { "type": "string" },
+        "createdAt": { "type": "string", "format": "date-time" }
+      },
+      "required": ["id", "userId", "role", "content", "createdAt"]
+    },
+    "StudySession": {
+      "title": "Study Session",
+      "description": "Paused or ongoing study sessions.",
+      "type": "object",
+      "properties": {
+        "id": { "type": "string" },
+        "userId": { "type": "string" },
+        "disciplineId": { "type": "string" },
+        "theme": { "type": "string" },
+        "content": { "type": "string" },
+        "baseKnowledge": { "type": "string" },
+        "timeSpent": { "type": "number", "description": "Seconds spent studying" },
+        "isActive": { "type": "boolean" },
+        "lastAccessed": { "type": "string", "format": "date-time" },
+        "createdAt": { "type": "string", "format": "date-time" }
+      },
+      "required": ["id", "userId", "disciplineId", "theme", "content", "isActive", "createdAt"]
     }
   },
   "firestore": {
@@ -136,6 +167,14 @@
     "tasks/{taskId}": {
       "schema": "Task",
       "description": "Academic tasks and exercises."
+    },
+    "chats/{messageId}": {
+      "schema": "ChatMessage",
+      "description": "History of conversations with the Tutor."
+    },
+    "study_sessions/{sessionId}": {
+      "schema": "StudySession",
+      "description": "Ongoing or paused study sessions."
     }
   }
 }

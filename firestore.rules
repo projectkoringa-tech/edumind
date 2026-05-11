@@ -80,6 +80,20 @@ service cloud.firestore {
              data.status in ['pending', 'completed'];
     }
 
+    function isValidChatMessage(data) {
+      return data.userId == request.auth.uid &&
+             data.role in ['user', 'assistant'] &&
+             data.content is string && data.content.size() > 0;
+    }
+
+    function isValidStudySession(data) {
+      return data.userId == request.auth.uid &&
+             data.disciplineId is string &&
+             data.theme is string && data.theme.size() > 0 &&
+             data.content is string &&
+             data.isActive is bool;
+    }
+
     // --- Collections ---
 
     match /users/{userId} {
@@ -153,6 +167,24 @@ service cloud.firestore {
                       incomingData().updatedAt == request.time &&
                       incomingData().diff(existingData()).affectedKeys().hasOnly(['userAnswer', 'correction', 'status', 'updatedAt']);
       allow delete: if isValidId(taskId) && isSignedIn() && resource.data.userId == request.auth.uid;
+    }
+
+    match /chats/{messageId} {
+      allow list: if isSignedIn() && resource.data.userId == request.auth.uid;
+      allow get: if isValidId(messageId) && isSignedIn() && resource.data.userId == request.auth.uid;
+      allow create: if isValidId(messageId) && isSignedIn() && isValidChatMessage(incomingData()) && incomingData().createdAt == request.time;
+      allow update, delete: if false; // Messages are immutable
+    }
+
+    match /study_sessions/{sessionId} {
+      allow list: if isSignedIn() && resource.data.userId == request.auth.uid;
+      allow get: if isValidId(sessionId) && isSignedIn() && resource.data.userId == request.auth.uid;
+      allow create: if isValidId(sessionId) && isSignedIn() && isValidStudySession(incomingData()) && incomingData().createdAt == request.time;
+      allow update: if isValidId(sessionId) && isSignedIn() && existingData().userId == request.auth.uid &&
+                      isValidStudySession(incomingData()) &&
+                      incomingData().userId == existingData().userId &&
+                      incomingData().diff(existingData()).affectedKeys().hasOnly(['content', 'isActive', 'timeSpent', 'lastAccessed', 'updatedAt']);
+      allow delete: if isValidId(sessionId) && isSignedIn() && resource.data.userId == request.auth.uid;
     }
   }
 }

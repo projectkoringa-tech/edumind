@@ -2,19 +2,96 @@ import { useState, useEffect, useRef, FormEvent } from 'react';
 import { useAuth } from '../contexts/AuthContext';
 import { chatWithPacavira } from '../services/geminiService';
 import { motion, AnimatePresence } from 'motion/react';
-import { Send, MessageSquare } from 'lucide-react';
+import { Send, MessageSquare, Trash2, RefreshCcw } from 'lucide-react';
 import { cn } from '../lib/utils';
+import { collection, query, where, orderBy, getDocs, addDoc, serverTimestamp, deleteDoc, doc, writeBatch } from 'firebase/firestore';
+import { db, handleFirestoreError, OperationType } from '../lib/firebase';
 
 import MarkdownRenderer from './MarkdownRenderer';
 
+interface Message {
+  role: 'user' | 'assistant';
+  content: string;
+}
+
 export default function Tutor() {
   const { profile, user } = useAuth();
-  const [messages, setMessages] = useState<{ role: 'user' | 'assistant', content: string }[]>([
-    { role: 'assistant', content: `Olá ${profile?.name}! Eu sou o Pacavira, seu tutor acadêmico. Como posso te ajudar hoje?` }
-  ]);
+  const [messages, setMessages] = useState<Message[]>([]);
   const [input, setInput] = useState('');
   const [loading, setLoading] = useState(false);
+  const [fetchingHistory, setFetchingHistory] = useState(true);
   const scrollRef = useRef<HTMLDivElement>(null);
+
+  useEffect(() => {
+    if (user) {
+      fetchChatHistory();
+    }
+  }, [user]);
+
+  async function fetchChatHistory() {
+    if (!user) return;
+    const chatPath = 'chats';
+    try {
+      const q = query(
+        collection(db, chatPath),
+        where('userId', '==', user.uid),
+        orderBy('createdAt', 'asc')
+      );
+      const snapshot = await getDocs(q);
+      const history = snapshot.docs.map(doc => doc.data() as Message);
+      
+      if (history.length === 0) {
+        setMessages([
+          { role: 'assistant', content: `Olá ${profile?.name}! Eu sou o Pacavira, seu tutor acadêmico. Como posso te ajudar hoje?` }
+        ]);
+      } else {
+        setMessages(history);
+      }
+    } catch (e) {
+      handleFirestoreError(e, OperationType.LIST, chatPath);
+    } finally {
+      setFetchingHistory(false);
+    }
+  }
+
+  async function saveMessage(role: 'user' | 'assistant', content: string) {
+    if (!user) return;
+    const chatPath = 'chats';
+    try {
+      await addDoc(collection(db, chatPath), {
+        userId: user.uid,
+        role,
+        content,
+        createdAt: serverTimestamp()
+      });
+    } catch (e) {
+      handleFirestoreError(e, OperationType.WRITE, chatPath);
+    }
+  }
+
+  async function clearHistory() {
+    if (!user || messages.length === 0) return;
+    if (!confirm('Deseja realmente apagar todo o histórico de conversas?')) return;
+    
+    const chatPath = 'chats';
+    try {
+      const q = query(
+        collection(db, chatPath),
+        where('userId', '==', user.uid)
+      );
+      const snapshot = await getDocs(q);
+      const batch = writeBatch(db);
+      snapshot.docs.forEach((doc) => {
+        batch.delete(doc.ref);
+      });
+      await batch.commit();
+      setMessages([
+        { role: 'assistant', content: `Histórico limpo. Como posso te ajudar agora?` }
+      ]);
+    } catch (e) {
+      handleFirestoreError(e, OperationType.DELETE, chatPath);
+    }
+  }
 
   useEffect(() => {
     if (scrollRef.current) {
@@ -28,11 +105,20 @@ export default function Tutor() {
 
     const userMessage = input.trim();
     setInput('');
-    setMessages(prev => [...prev, { role: 'user', content: userMessage }]);
+    
+    const updatedMessages = [...messages, { role: 'user' as const, content: userMessage }];
+    setMessages(updatedMessages);
     setLoading(true);
 
     try {
+      // Save user message
+      await saveMessage('user', userMessage);
+
+      // Get AI response
       const response = await chatWithPacavira(messages, userMessage, profile);
+      
+      // Save and update assistant message
+      await saveMessage('assistant', response);
       setMessages(prev => [...prev, { role: 'assistant', content: response }]);
     } catch (error: any) {
       console.error(error);
@@ -56,40 +142,56 @@ export default function Tutor() {
             <p className="text-[10px] text-white/60 uppercase tracking-[0.2em] font-bold mt-1">Tutor Assistente Virtual</p>
           </div>
         </div>
-        <div className="flex items-center gap-2 bg-white/10 px-3 py-1.5 rounded-full border border-white/10">
-          <div className="w-2 h-2 rounded-full bg-accent animate-pulse"></div>
-          <span className="text-[10px] font-bold uppercase tracking-widest">Online</span>
+        <div className="flex items-center gap-4">
+          <button 
+            onClick={clearHistory}
+            className="p-2 hover:bg-white/10 rounded-lg transition-all text-white/70 hover:text-white"
+            title="Limpar Histórico"
+          >
+            <Trash2 size={18} />
+          </button>
+          <div className="flex items-center gap-2 bg-white/10 px-3 py-1.5 rounded-full border border-white/10">
+            <div className="w-2 h-2 rounded-full bg-accent animate-pulse"></div>
+            <span className="text-[10px] font-bold uppercase tracking-widest">Online</span>
+          </div>
         </div>
       </div>
 
       <div ref={scrollRef} className="flex-1 overflow-y-auto p-6 space-y-6 custom-scrollbar bg-[#F8FAFC]">
-        {messages.map((msg, i) => (
-          <motion.div
-            key={i}
-            initial={{ opacity: 0, y: 10 }}
-            animate={{ opacity: 1, y: 0 }}
-            className={cn(
-              "flex flex-col max-w-[85%]",
-              msg.role === 'user' ? "ml-auto items-end" : "items-start"
-            )}
-          >
-            <div className={cn(
-              "px-5 py-4 rounded-[22px] text-[14px] leading-relaxed font-medium shadow-sm",
-              msg.role === 'user' 
-                ? "bg-primary text-white rounded-tr-none shadow-primary/20" 
-                : "bg-white text-slate-800 rounded-tl-none border border-slate-100"
-            )}>
-              {msg.role === 'assistant' ? (
-                <MarkdownRenderer content={msg.content} />
-              ) : (
-                msg.content
+        {fetchingHistory ? (
+          <div className="flex flex-col items-center justify-center h-full text-slate-400 gap-4">
+            <RefreshCcw className="animate-spin" />
+            <p className="text-xs font-black uppercase tracking-widest">A carregar histórico...</p>
+          </div>
+        ) : (
+          messages.map((msg, i) => (
+            <motion.div
+              key={i}
+              initial={{ opacity: 0, y: 10 }}
+              animate={{ opacity: 1, y: 0 }}
+              className={cn(
+                "flex flex-col max-w-[85%]",
+                msg.role === 'user' ? "ml-auto items-end" : "items-start"
               )}
-            </div>
-            <p className="text-[10px] text-slate-400 mt-2 uppercase font-black tracking-widest px-1">
-              {msg.role === 'user' ? 'Tu' : 'Pacavira'}
-            </p>
-          </motion.div>
-        ))}
+            >
+              <div className={cn(
+                "px-5 py-4 rounded-[22px] text-[14px] leading-relaxed font-medium shadow-sm",
+                msg.role === 'user' 
+                  ? "bg-primary text-white rounded-tr-none shadow-primary/20" 
+                  : "bg-white text-slate-800 rounded-tl-none border border-slate-100"
+              )}>
+                {msg.role === 'assistant' ? (
+                  <MarkdownRenderer content={msg.content} />
+                ) : (
+                  msg.content
+                )}
+              </div>
+              <p className="text-[10px] text-slate-400 mt-2 uppercase font-black tracking-widest px-1">
+                {msg.role === 'user' ? 'Tu' : 'Pacavira'}
+              </p>
+            </motion.div>
+          ))
+        )}
         {loading && (
           <div className="flex gap-3 items-center text-slate-400 text-[11px] font-bold tracking-widest uppercase p-2">
             <div className="flex gap-1">
@@ -107,12 +209,14 @@ export default function Tutor() {
           type="text"
           value={input}
           onChange={(e) => setInput(e.target.value)}
+          disabled={loading || fetchingHistory}
           placeholder="Pergunta qualquer coisa ao Pacavira..."
           className="flex-1 px-6 py-4 rounded-2xl border border-slate-200 outline-none focus:ring-4 focus:ring-primary/10 bg-slate-50 transition-all font-medium text-sm"
         />
         <button
           type="submit"
-          className="bg-secondary text-white px-6 rounded-2xl hover:brightness-110 transition-all shadow-xl shadow-secondary/20 flex items-center justify-center"
+          disabled={loading || fetchingHistory || !input.trim()}
+          className="bg-secondary text-white px-6 rounded-2xl hover:brightness-110 transition-all shadow-xl shadow-secondary/20 flex items-center justify-center disabled:opacity-50"
         >
           <Send size={20} fill="currentColor" />
         </button>
